@@ -74,3 +74,13 @@ Each folder contains the specific Kaggle Notebook (`.ipynb`) and the resulting p
 2. **Enable GPU P100** in the "Accelerator" settings.
 3. **Ensure** the competition dataset is attached to the notebook.
 4. **Run all cells** to generate the 50-epoch training logs and plots.
+
+## Kaggle Notebooks & Resources
+
+The following notebooks contain the full implementation, training logs, and visualizations for each stage of the project:
+
+* **Base Model**: [View on Kaggle](https://www.kaggle.com/code/hamzabinbutt/base-model-csiro)
+* **CNN 5 Conv Layers Experiment**: [View on Kaggle](https://www.kaggle.com/code/hamzabinbutt/cnn-5-conv)
+* **Kernel Size Experiment**: [View on Kaggle](https://www.kaggle.com/code/hamzabinbutt/csiro-biomass-cnn-experiment-kernel-size)
+* **Augmentation Strategy Study**: [View on Kaggle](https://www.kaggle.com/code/hamzabinbutt/cnn-augmentation-strat)
+* **Final Optimized Pipeline**: [View on Kaggle](https://www.kaggle.com/code/hamzabinbutt/csiro-biomass-cnn-final-optimized-training-pipel)
