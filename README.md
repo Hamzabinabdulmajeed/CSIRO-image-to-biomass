@@ -1,56 +1,86 @@
-# CSIRO Image to Biomass Prediction
+# CSIRO Image to Biomass Prediction: Experimental Suite
 
-Regression project for estimating pasture biomass.
+This repository documents a series of ablation studies and optimization experiments for the **CSIRO Image2Biomass** competition. All experiments were conducted in the **Kaggle Notebook environment** utilizing **NVIDIA Tesla P100 or T4 GPUs** for accelerated training.
 
-## Project Description
+## Environment & Hardware
 
-This repository contains a deep learning baseline for the **CSIRO Image2Biomass** competition. The goal is to predict five specific biomass targets from pasture images using a Convolutional Neural Network (CNN).
+* **Platform**: Kaggle Notebooks
+* **Accelerator**: NVIDIA P100 / T4 GPU
+* **Framework**: PyTorch 2.x
+* **Training Duration**: 50 Epochs per experiment
 
-## Model Architecture
+## Experimental Results
 
-The architecture is designed to handle regression tasks with variable input sizes:
+### 1. Base Model (`/base_model`)
 
-* **Feature Extractor**: 2D Convolutional layers followed by Batch Normalization for training stability.
-* **Pooling**: Adaptive Average Pooling to ensure a fixed-size vector regardless of input image resolution.
-* **Output Layer**: A linear regressor with a final ReLU activation to ensure predicted biomass values are never negative.
+The initial baseline to establish a performance floor.
 
-## Loss and Metrics
+* **Strategy**: Simple 3-block CNN without advanced regularization.
+* **Key Metrics**:
+* **Best Val R²**: 0.2515 (Epoch 47)
+* **Best Val Loss**: 0.1007 (Epoch 35)
 
-The model uses a **Weighted Mean Squared Error (MSE)** loss to align with the competition's evaluation objectives.
 
-### Target Weights
 
-| Target Column | Weight |
-| --- | --- |
-| Dry_Total_g | 0.5 |
-| GDM_g | 0.2 |
-| Dry_Clover_g | 0.1 |
-| Dry_Grass_g | 0.1 |
-| Dry_Weeds_g | 0.1 |
+### 2. Architecture Depth (`/CNN_5_Conv`)
 
-Performance is tracked using the **Global Weighted R-squared (R2)** score across all target categories.
+Investigating if deeper networks improve biomass estimation.
 
-## Installation
+* **Strategy**: Increasing convolutional blocks from 2 to 5.
+* **Results**: Models with **4+ blocks** showed severe overfitting. **2–3 blocks** were identified as the optimal depth for this dataset size.
 
-1. Clone the repository to your local machine.
-2. Install the necessary dependencies:
+### 3. Augmentation Strategies (`/cnn-augmentation-strat`)
 
-```bash
-pip install -r requirements.txt
+Testing the impact of synthetic data variety on generalization.
 
-```
+* **Strategy**: Compared "No Augmentation", "Light", "Medium", and "Strong".
+* **Top Performer**: **Medium Augmentation** (Avg Val R²: 0.112). "No Augmentation" resulted in negative R² values, proving that variation is critical for biomass regression.
 
-## Training
+### 4. Regularization & Dropout (`/cnn-dropout-regularization`)
 
-The training script is configured to run for **50 epochs**. During the process, it automatically records:
+Fine-tuning the model to handle noise and prevent overfitting.
 
-* Training and validation loss.
-* Weighted R2 scores for each epoch.
-* Periodic model checkpoints.
+* **Strategy**: Grid search on Dropout (0.0 to 0.6) and Weight Decay (0.0 to 0.001).
+* **Top Performer**: **Dropout 0.6 + WD 0.0001**. High dropout significantly improved validation stability.
+
+### 5. Kernel Size Study (`/csiro-biomass-cnn-experiment-kernel-size`)
+
+Examining spatial receptive fields for pasture imagery.
+
+* **Strategy**: Comparison of 3x3, 5x5, and 7x7 kernels.
+* **Finding**: **5x5 Kernels** provided the best balance of local feature extraction and training stability.
+
+### 6. Final Optimized Pipeline (`/csiro-biomass-cnn-final-optimized-training-pipel`)
+
+Consolidation of all winning strategies into a single production pipeline.
+
+* **Config**: 5x5 Kernels, 3 Conv Blocks, Medium Augmentation, and 0.6 Dropout.
+* **Best Val R²**: **0.1657** (Aggregated average across targets).
 
 ## Project Structure
 
-* `data/`: Local directory for raw images and CSV metadata (excluded from Git).
-* `models/`: Directory for storing trained weights and model exports.
-* `src/`: Core Python scripts including the model class, custom loss functions, and the training loop.
-* `results/`: Visualizations of training history and error analysis plots.
+Each folder contains the specific Kaggle Notebook (`.ipynb`) and the resulting performance plots:
+
+* **base_model/**
+* **CNN_5_Conv/**
+* **cnn-augmentation-strat/**
+* **cnn-dropout-regularization/**
+* **csiro-biomass-cnn-experiment-kernel-size/**
+* **csiro-biomass-cnn-final-optimized-training-pipel/**
+
+## How to Reproduce
+
+1. **Upload** the notebooks to a Kaggle session.
+2. **Enable GPU P100** in the "Accelerator" settings.
+3. **Ensure** the competition dataset is attached to the notebook.
+4. **Run all cells** to generate the 50-epoch training logs and plots.
+
+## Kaggle Notebooks & Resources
+
+The following notebooks contain the full implementation, training logs, and visualizations for each stage of the project:
+
+* **Base Model**: [View on Kaggle](https://www.kaggle.com/code/hamzabinbutt/base-model-csiro)
+* **CNN 5 Conv Layers Experiment**: [View on Kaggle](https://www.kaggle.com/code/hamzabinbutt/cnn-5-conv)
+* **Kernel Size Experiment**: [View on Kaggle](https://www.kaggle.com/code/hamzabinbutt/csiro-biomass-cnn-experiment-kernel-size)
+* **Augmentation Strategy Study**: [View on Kaggle](https://www.kaggle.com/code/hamzabinbutt/cnn-augmentation-strat)
+* **Final Optimized Pipeline**: [View on Kaggle](https://www.kaggle.com/code/hamzabinbutt/csiro-biomass-cnn-final-optimized-training-pipel)
