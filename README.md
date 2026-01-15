@@ -1,98 +1,72 @@
-# CSIRO Image to Biomass Prediction: Experimental Suite
+**CSIRO Image2Biomass**
+## 1. Phase 1: Custom CNN Baseline & Optimization
 
-This repository documents a series of ablation studies and optimization experiments for the **CSIRO Image2Biomass** competition. All experiments were conducted in the **Kaggle Notebook environment** utilizing **NVIDIA Tesla P100 or T4 GPUs**.
+The project began by attempting to train specialized CNNs from scratch to establish a baseline for biomass estimation.
 
-## Environment & Hardware
+### Core Experiments
 
-* **Platform**: Kaggle Notebooks
-* **Accelerator**: NVIDIA P100 / T4 GPU
-* **Framework**: PyTorch 2.x, CatBoost, LightGBM, XGBoost
-* **Feature Extraction**: DINOv2 (Patch-based embeddings)
-* **Training Duration**: 50 Epochs (for CNN-based experiments)
+* **Architecture Depth (`/CNN_5_Conv`)**: Models were tested with 2 to 5 convolutional blocks. We discovered a "sweet spot" at **3 blocks**; deeper networks (4+) led to severe overfitting and validation loss divergence.
+* **Kernel Size Study**: A comparison between 3x3 and 5x5 kernels showed that **3x3 kernels** provided better spatial resolution for fine-grained biomass textures.
+* **Regularization Strategies**: This was the most critical factor for CNNs. High **Dropout (0.6)** was necessary to stabilize the validation , as lower values often resulted in negative scores.
+* **Augmentation Strategy**: "Medium Augmentation" (flips, rotations, brightness) was found to be mandatory. Without it, the models failed to generalize to the varied lighting and growth conditions of the Australian pastures.
 
-## Experimental Results
+### Phase 1 Limitations
 
-### 1. CNN Baseline Summary Metrics
-The following table reflects the global averages across early CNN optimization trials.
+Despite optimization, the best CNN achieved a peak ** of ~0.32**. The small dataset size made it difficult for the network to learn robust features from scratch.
 
-| Metric | Value | Significance |
+---
+
+## 2. Phase 2: DINOv2 + GBDT (Current State-of-the-Art)
+
+To achieve a breakthrough, we pivoted to a Transfer Learning approach using Meta’s **DINOv2**, a self-supervised Vision Transformer.
+
+### The New Strategy
+
+Instead of training a backbone, we used a **frozen DINOv2** to extract rich, high-dimensional features.
+
+1. **Patch-Based Embeddings**: Unlike standard models that use a single global token (CLS), we extracted patch-level embeddings to capture local biomass density.
+2. **Global Aggregation**: These patch features were averaged to create a robust image descriptor.
+3. **GBDT Head**: The embeddings were fed into Gradient Boosted Decision Trees (CatBoost, LightGBM, and XGBoost).
+
+### 5-Fold Performance Jump
+
+The shift to DINOv2 nearly **doubled** the predictive power of our pipeline.
+
+| Model | Avg Weighted  | Key Strength |
 | --- | --- | --- |
-| **Avg Train Loss** | 0.15376 | Robust training convergence. |
-| **Avg Val Loss** | 0.12544 | Efficient error minimization on validation sets. |
-| **Best Val $R^2$** | **0.32011** | **Peak Potential:** Highest variance explained in CNN runs. |
+| **CatBoost** | **0.6289** | Most stable across folds; lowest variance. |
+| **LightGBM** | 0.6181 | Fastest training; competitive accuracy. |
+| **XGBoost** | 0.5539 | Solid baseline but struggled with embedding noise. |
 
 ---
 
-### 2. DINOv2 + GBDT Experiments (Current State-of-the-Art)
-This experiment shifted from raw CNNs to utilizing pre-trained **DINOv2** features. Patch-based embeddings (excluding the CLS token) were averaged and passed to Gradient Boosted Decision Trees (GBDTs). This approach significantly outperformed all previous CNN architectures.
+## 3. Final Optimized Pipeline
 
-#### 5-Fold Cross-Validation Performance
-Results are based on the **Global Weighted $R^2$** metric using competition-specific weights: `Dry_Total_g` (0.5), `GDM_g` (0.2), and 0.1 for the remaining targets.
+The production-ready pipeline combines the best of both phases.
 
-| Model | Average Weighted $R^2$ | Standard Deviation (±) |
-| --- | :---: | :---: |
-| **CatBoost** | **0.6289** | **0.0415** |
-| **LightGBM** | 0.6181 | 0.0502 |
-| **XGBoost** | 0.5539 | 0.0539 |
+* **Feature Extractor**: DINOv2 (Patch Averaging) for superior spatial understanding.
+* **Regressor**: **CatBoost** using a weighted objective to match the competition metric.
+* **Inference**: Includes **Test-Time Augmentation (TTA)** with horizontal flips to further reduce prediction variance.
+* **Metric Weighting**: The final model is optimized for the weighted  formula:
+* `Dry_Total_g` (0.5 weight)
+* `GDM_g` (0.2 weight)
+* All others (0.1 weight)
 
-#### Detailed Fold-by-Fold Results ($R^2$)
-| Model | Fold 1 | Fold 2 | Fold 3 | Fold 4 | Fold 5 |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **CatBoost** | 0.6191 | 0.6285 | 0.6873 | 0.6492 | 0.5604 |
-| **LightGBM** | 0.5807 | 0.6072 | 0.7106 | 0.6237 | 0.5682 |
-| **XGBoost** | 0.5319 | 0.5610 | 0.6550 | 0.5169 | 0.5046 |
+
 
 ---
 
-### 3. Ablation Studies & Optimization (CNN-based)
+## 4. Notebook Links Summary
 
-#### A. Architecture Depth (`/CNN_5_Conv`)
-* **Strategy**: Increasing convolutional blocks from 2 to 5.
-* **Finding**: The **3-block** configuration provided the best balance. Models with 4+ blocks showed severe overfitting.
+### CNN Ablation Suite
 
-#### B. Augmentation Strategies (`/cnn-augmentation-strat`)
-* **Top Performer**: **Medium Augmentation**. "No Augmentation" resulted in negative $R^2$ values, proving that visual variation is mandatory.
+* [CNN Dropout & Regularization](https://www.kaggle.com/code/hamzabinbutt/cnn-dropout-regularization)
+* [Augmentation Strategy Analysis](https://www.kaggle.com/code/hamzabinbutt/cnn-augmentation-strat)
+* [Kernel Size Study](https://www.kaggle.com/code/hamzabinbutt/csiro-biomass-cnn-experiment-kernel-size)
+* [CNN 5-Conv Depth Analysis](https://www.kaggle.com/code/hamzabinbutt/cnn-5-conv)
+* [Base Model CSIRO](https://www.kaggle.com/code/hamzabinbutt/base-model-csiro)
 
-#### C. Regularization & Dropout (`/cnn-dropout-regularization`)
-* **Top Performer**: **Dropout 0.6 + WD 0.0**. High dropout was the single most effective setting for stabilizing validation $R^2$.
+### DINOv2 & Final Results
 
-#### D. Kernel Size Study (`/csiro-biomass-cnn-experiment-kernel-size`)
-* **Finding**: **3x3 Kernels** achieved the highest individual potential in the CNN suite.
-
----
-
-### 4. Final Optimized Pipeline Strategy
-
-The production pipeline utilizes the winning DINOv2 + GBDT configuration.
-
-| Component | Optimal Selection | Impact |
-| --- | --- | --- |
-| **Feature Extractor** | **DINOv2 (Patch Avg)** | Jump in $R^2$ from ~0.32 (CNN) to **~0.63**. |
-| **Regressor** | **CatBoost** | Best stability (lowest Std Dev) across all folds. |
-| **TTA** | **Horizontal Flips** | Reduces variance in patch-based inference. |
-| **Regularization** | **Dropout 0.6** | Essential for preventing negative $R^2$ in deep layers. |
-
-## Project Structure
-
-* **dinov2_gbdt_pipeline/**: Current best performing code (DINOv2 + CatBoost).
-* **final_optimized_pipeline/**: Production-ready code and weights for `submission.csv`.
-* **CNN_5_Conv/**: Depth analysis proving 3 blocks is the "sweet spot".
-* **cnn-augmentation-strat/**: Evidence for mandatory augmentation.
-* **cnn-dropout-regularization/**: Establishing the 0.6 dropout baseline.
-* **csiro-biomass-cnn-experiment-kernel-size/**: Detailed 3x3 vs 5x5 comparison.
-
-## How to Reproduce
-
-1. **Upload** the notebooks to a Kaggle session.
-2. **Enable GPU P100/T4** in the settings.
-3. **Ensure** the `csiro-biomass` dataset is attached.
-4. **Run** the DINOv2 feature extraction and CatBoost training cells to regenerate results.
-
-## Notebook Links
-1. https://www.kaggle.com/code/hamzabinbutt/cnn-dropout-regularization
-2. https://www.kaggle.com/code/hamzabinbutt/cnn-augmentation-strat
-3. https://www.kaggle.com/code/hamzabinbutt/csiro-biomass-cnn-experiment-kernel-size
-4. https://www.kaggle.com/code/hamzabinbutt/cnn-5-conv
-5. https://www.kaggle.com/code/hamzabinbutt/base-model-csiro
-6. https://www.kaggle.com/code/hamzabinbutt/csiro-biomass-cnn-final-optimized-training-pipel
-7. https://www.kaggle.com/code/hamzabinbutt/dinvov2-gb
+* [DINOv2 + GBDT Experimental](https://www.kaggle.com/code/hamzabinbutt/dinvov2-gb)
+* [Final Optimized Training Pipeline](https://www.kaggle.com/code/hamzabinbutt/csiro-biomass-cnn-final-optimized-training-pipel)
