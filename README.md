@@ -95,3 +95,4 @@ The production pipeline utilizes the winning DINOv2 + GBDT configuration.
 4. https://www.kaggle.com/code/hamzabinbutt/cnn-5-conv
 5. https://www.kaggle.com/code/hamzabinbutt/base-model-csiro
 6. https://www.kaggle.com/code/hamzabinbutt/csiro-biomass-cnn-final-optimized-training-pipel
+7. https://www.kaggle.com/code/hamzabinbutt/dinvov2-gb
