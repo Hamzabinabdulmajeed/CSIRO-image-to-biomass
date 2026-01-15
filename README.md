@@ -87,3 +87,11 @@ The production pipeline utilizes the winning DINOv2 + GBDT configuration.
 2. **Enable GPU P100/T4** in the settings.
 3. **Ensure** the `csiro-biomass` dataset is attached.
 4. **Run** the DINOv2 feature extraction and CatBoost training cells to regenerate results.
+
+## Notebook Links
+https://www.kaggle.com/code/hamzabinbutt/cnn-dropout-regularization
+https://www.kaggle.com/code/hamzabinbutt/cnn-augmentation-strat
+https://www.kaggle.com/code/hamzabinbutt/csiro-biomass-cnn-experiment-kernel-size
+https://www.kaggle.com/code/hamzabinbutt/cnn-5-conv
+https://www.kaggle.com/code/hamzabinbutt/base-model-csiro
+https://www.kaggle.com/code/hamzabinbutt/csiro-biomass-cnn-final-optimized-training-pipel
